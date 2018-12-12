@@ -5,12 +5,6 @@ use model::image_class::ImageClass::*;
 
 mod model;
 
-#[derive(Debug)]
-struct Example {
-    u_long: u128,
-    double: f64,
-}
-
 fn main() {
     let mut input1 = input::Input::new(
         "image1",
@@ -53,10 +47,4 @@ fn main() {
     input1_clone.name = String::from("image1' clone");
     let inputs = vec![input1, input2, input3, input4, input1_clone];
     neural_node1.multiple_output_signal_calc(inputs);
-
-    let ex = Example { u_long: 128, double: 128.0 };
-    let ref_to_ex = &ex;
-    let moved_ex = ex;
-    
-    println!("{:?}", ref_to_ex);
 }
