@@ -1,12 +1,12 @@
 extern crate image;
 
 use std::fmt;
+use std::path::Path;
 use self::image::{GenericImageView, Pixel, Rgb};
 
 use model::*;
 use model::image_class::ImageClass;
 use model::image_class::ImageClass::*;
-use std::path::Path;
 use model::IMAGE_SIZE;
 
 #[derive(Clone)]
@@ -32,10 +32,14 @@ impl Input {
     pub fn from_image_path(path: &Path, class: ImageClass) -> Option<Input> {
         let image = match image::open(path) {
             Ok(x) => x,
-            Err(_) => return None
+            Err(_) => {
+                eprintln!("Error");
+                return None
+            }
         };
         let img_size = IMAGE_SIZE as u32 * IMAGE_SIZE as u32;
         if image.dimensions().0 * image.dimensions().1 != img_size {
+            eprintln!("Error");
             return None
         }
         let signals = image.pixels().map(|(_, _, p)| {
@@ -58,7 +62,7 @@ impl Default for Input {
         Input {
             name: String::from("image"),
             signals: vec![-1; IMAGE_SIZE],
-            class: Positive,
+            class: Zero,
         }
     }
 }

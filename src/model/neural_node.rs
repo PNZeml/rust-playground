@@ -1,46 +1,36 @@
-use std::time::Duration;
-use std::thread::{spawn, sleep};
-use std::sync::mpsc::{Sender, Receiver};
-use std::sync::mpsc;
+extern crate rayon;
 
-use model::{image_class::ImageClass::*, input::Input, weight::Weight, *};
-use rand::{thread_rng, Rng};
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc;
+use std::thread::{sleep, spawn};
+use std::time::Duration;
+
+use rand::{Rng, thread_rng};
+use rayon::prelude::*;
+
+use model::{*, image_class::ImageClass::*, input::Input, weight::Weight};
 
 pub struct NeuralNode {
     pub name: String,
+    pub bias: i64,
     pub last_output_signal: i64,
 }
 
 impl NeuralNode {
-    pub fn new(name: &str) -> NeuralNode {
+    pub fn new(name: &str, bias: i64) -> NeuralNode {
         NeuralNode {
             name: String::from(name),
+            bias,
             last_output_signal: 0,
         }
     }
 
-    pub fn output_signal_calc(&mut self, input: &Input, weight: &mut Weight) {
-        let mut s = weight.coeffs[0];
-        for i in 0..input.signals.len() {
-            s += input.signals[i] as i64 * weight.coeffs[i + 1];
-        }
-
-        if s > 0 && input.class == Positive || s < 0 && input.class == Negative {
-            println!("{}\t:: {} принадлежит классу {} с выходным сигналом {}",
-                     self.name.green(),
-                     input.name.red().bold(),
-                     input.class,
-                     s);
-            self.last_output_signal = s;
-            return;
-        } else {
-            println!("{}\t:: Не удалось распознать {} с входным классом {}",
-                     self.name.green(),
-                     input.name.red().bold(),
-                     input.class);
-            println!("{}\t:: Перерасчет входных коэффицентов...", self.name.green());
-            weight.update(input);
-            self.output_signal_calc(input, weight)
-        }
+    pub fn process(&self, input: &Input, weight: &Weight) -> bool {
+        let res: i64 = input.signals
+            .par_iter()
+            .zip(weight.coeffs.par_iter())
+            .map(|(i, w)| *i as i64 * *w)
+            .sum();
+        res >= self.bias
     }
 }
