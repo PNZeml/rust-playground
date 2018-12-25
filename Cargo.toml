@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["PNZeml <pavelz1n@yandex.ru>"]
 
 [dependencies]
-colored = "1.6"
-rand = "0.6.1"
-thread-id = "3.3.0"
+colored = "*"
+rand = "*"
+glob = "*"
+image = "*"
+rayon = "*"

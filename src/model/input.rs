@@ -1,8 +1,13 @@
+extern crate image;
+
 use std::fmt;
+use self::image::{GenericImageView, Pixel, Rgb};
 
 use model::*;
-use model::image_class::ImageClass::*;
 use model::image_class::ImageClass;
+use model::image_class::ImageClass::*;
+use std::path::Path;
+use model::IMAGE_SIZE;
 
 #[derive(Clone)]
 pub struct Input {
@@ -12,16 +17,39 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn new(name: &str, signals: &[i8], class_id: ImageClass) -> Option<Input> {
+    pub fn new(name: &str, signals: &[i8], class: ImageClass) -> Option<Input> {
         if signals.len() == IMAGE_SIZE {
             Some(Input {
                 name: String::from(name),
                 signals: signals.to_vec(),
-                class: class_id,
+                class,
             })
         } else {
             None
         }
+    }
+
+    pub fn from_image_path(path: &Path, class: ImageClass) -> Option<Input> {
+        let image = match image::open(path) {
+            Ok(x) => x,
+            Err(_) => return None
+        };
+        let img_size = IMAGE_SIZE as u32 * IMAGE_SIZE as u32;
+        if image.dimensions().0 * image.dimensions().1 != img_size {
+            return None
+        }
+        let signals = image.pixels().map(|(_, _, p)| {
+            if p.channels()[0] != 0 {
+                1
+            } else {
+                -1
+            }
+        }).collect();
+        Some(Input {
+            name: format!("{:?}", path),
+            signals,
+            class
+        })
     }
 }
 

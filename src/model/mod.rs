@@ -7,4 +7,4 @@ pub mod weight;
 pub mod neural_node;
 pub mod image_class;
 
-pub static IMAGE_SIZE: usize = 9;
+pub static IMAGE_SIZE: usize = 32;

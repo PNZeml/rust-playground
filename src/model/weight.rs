@@ -15,7 +15,7 @@ impl Weight {
     pub fn new(name: &str) -> Weight {
         Weight {
             name: String::from(name),
-            coeffs: vec![0; IMAGE_SIZE + 1],
+            coeffs: vec![0; IMAGE_SIZE * IMAGE_SIZE + 1],
             adjust_iteration: 0,
         }
     }
@@ -35,6 +35,22 @@ impl Weight {
             self.coeffs[i] += (input.signals[i - 1] * input.class.value()) as i64;
         }
         self.adjust_iteration += 1;
+    }
+
+    pub fn print(self) {
+        let mut ln_br_cn = 0;
+        let mut ln_to_output = String::new();
+        for c in self.coeffs {
+            ln_to_output.push_str(&c.to_string());
+            ln_to_output.push('\t');
+            if ln_br_cn == IMAGE_SIZE {
+                ln_br_cn = 0;
+                println!("{}", ln_to_output);
+                ln_to_output = String::new();
+            } else {
+                ln_br_cn += 1;
+            }
+        }
     }
 }
 

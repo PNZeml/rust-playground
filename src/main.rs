@@ -1,50 +1,48 @@
+extern crate glob;
 extern crate rand;
+extern crate rayon;
+
+use std::fs::create_dir_all;
+use std::path::{Path, PathBuf};
+
+use glob::{glob_with, MatchOptions};
+use rayon::prelude::*;
 
 use model::*;
 use model::image_class::ImageClass::*;
+use model::input::Input;
+use model::weight::Weight;
 
 mod model;
 
+fn get_learning_files(uri: &str) -> Vec<PathBuf> {
+    glob_with(uri, &Default::default())
+        .unwrap()
+        .filter_map(|x| x.ok())
+        .collect()
+}
+
 fn main() {
-    let mut input1 = input::Input::new(
-        "image1",
-        &[1, -1, 1, 1, 1, 1, -1, -1, 1],
-        Positive,
-    ).unwrap();
-    let input2 = input::Input::new(
-        "image2",
-        &[1, 1, 1, 1, -1, 1, 1, -1, 1],
-        Negative,
-    ).unwrap();
+    let inputs_0: Vec<Input> = get_learning_files("res/0/*.png").par_iter()
+        .map(|x| Input::from_image_path(x, Negative))
+        .filter(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .collect();
 
-    println!("{}\n{}", input1, input2);
+    let inputs_1: Vec<Input> = get_learning_files("res/1/*.png").par_iter()
+        .map(|x| Input::from_image_path(x, Positive))
+        .filter(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .collect();
 
-    let mut w = weight::Weight::new_from_input("weight1", &input1);
-    w.update(&input2);
-    println!("{}", w);
+    let mut w_0 = Weight::new("w_0");
+    for i in inputs_0 {
+        w_0.update(&i);
+    }
 
-    let mut neural_node1 = neural_node::NeuralNode::new("neuralNode1");
-    neural_node1.output_signal_calc(&input1, &mut w);
-    neural_node1.output_signal_calc(&input2, &mut w);
-
-    let mut input3 = model::input::Input::new(
-        "image3",
-        &[-1, 1, 1, -1, 1, 1, -1, -1, -1],
-        Negative,
-    ).unwrap();
-
-    neural_node1.output_signal_calc(&mut input3, &mut w);
-    let mut input4 = model::input::Input {
-        name: "image4".to_string(),
-        signals: vec![-1, 1, 1, -1, -1, -1, 1, 1, -1],
-        class: Positive,
-    };
-
-    neural_node1.output_signal_calc(&mut input4, &mut w);
-    neural_node1.output_signal_calc(&mut input1, &mut w);
-
-    let mut input1_clone = input1.clone();
-    input1_clone.name = String::from("image1' clone");
-    let inputs = vec![input1, input2, input3, input4, input1_clone];
-    neural_node1.multiple_output_signal_calc(inputs);
+    let mut w_1 = Weight::new("w_1");
+    for i in inputs_1 {
+        w_1.update(&i);
+    }
+    w_1.print();
 }
