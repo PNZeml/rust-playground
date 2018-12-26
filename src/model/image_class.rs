@@ -6,8 +6,7 @@ pub enum ImageClass {
     Zero,
     One,
     Two,
-    Three,
-    Four,
+    Three
 }
 
 impl ImageClass {
@@ -15,10 +14,8 @@ impl ImageClass {
         match self {
             ImageClass::Zero => 0,
             ImageClass::One => 1,
-            ImageClass::One => 2,
-            ImageClass::Two => 3,
-            ImageClass::Three => 4,
-            ImageClass::Four=> 5,
+            ImageClass::Two => 2,
+            ImageClass::Three => 3,
         }
     }
 }

@@ -1,92 +1,99 @@
-extern crate glob;
+extern crate colored;
 extern crate rand;
-extern crate rayon;
 
-use std::fs::create_dir_all;
-use std::path::{Path, PathBuf};
-
-use glob::{glob_with, MatchOptions};
-use rayon::prelude::*;
+use colored::Colorize;
+use rand::Rng;
 
 use model::*;
 use model::image_class::ImageClass::*;
 use model::input::Input;
-use model::weight::Weight;
 use model::neural_node::NeuralNode;
-use rand::Rng;
+use model::weight::Weight;
 
 mod model;
 
-fn get_learning_files(uri: &str) -> Vec<PathBuf> {
-    glob_with(uri, &Default::default())
-        .unwrap()
-        .filter_map(|x| x.ok())
-        .collect()
-}
+const DATA_SETS: usize = 4;
 
 fn main() {
-    let inputs_0: Vec<Input> = get_learning_files("res/0/*.png").par_iter()
-        .map(|x| Input::from_image_path(x, Zero))
-        .filter(|x| x.is_some())
-        .map(|x| x.unwrap())
-        .collect();
-
-    let inputs_1: Vec<Input> = get_learning_files("res/1/*.png").par_iter()
-        .map(|x| Input::from_image_path(x, One))
-        .filter(|x| x.is_some())
-        .map(|x| x.unwrap())
-        .collect();
-
-    let inputs_2: Vec<Input> = get_learning_files("res/2/*.png").par_iter()
-        .map(|x| Input::from_image_path(x, Two))
-        .filter(|x| x.is_some())
-        .map(|x| x.unwrap())
-        .collect();
-
-    let mut w_0 = Weight::new("w_0");
     let mut rng = rand::thread_rng();
-    // Train 0
-    let nn = NeuralNode::new("nn_0", 10000);
-    for _ in 0..1000 {
-        let n = rng.gen_range(0, 3);
 
-        match n == 2 {
-            true => {
-                for i in inputs_2.iter() {
-                    if !nn.process(i, &w_0) {
-                        w_0.update(i, 1);
-                    }
-                }
-            },
-            false => {
-                match n {
-                    1 => {
-                        for i in inputs_1.iter() {
-                            if nn.process(i, &w_0) {
-                                w_0.update(i, -1);
-                            }
-                        }
-                    },
-                    0 => {
-                        for i in inputs_0.iter() {
-                            if nn.process(i, &w_0) {
-                                w_0.update(i, -1);
-                            }
-                        }
-                    }
-                    _ => {},
-                }
+    let mut inputs: Vec<Vec<Input>> = Vec::new();
+    inputs.push(Input::inputs_from_path("res/0/*.png", &Zero));
+    inputs.push(Input::inputs_from_path("res/1/*.png", &One));
+    inputs.push(Input::inputs_from_path("res/2/*.png", &Two));
+    inputs.push(Input::inputs_from_path("res/3/*.png", &Three));
+
+    let mut weights: Vec<Weight> = Vec::new();
+    let mut nn_0 = NeuralNode::new("nn_0", 6000);
+
+    if !true {
+        weights.push(Weight::new("w_0"));
+        weights.push(Weight::new("w_1"));
+        weights.push(Weight::new("w_2"));
+        weights.push(Weight::new("w_3"));
+
+        let mut n: usize = 0;
+        for _ in 0..15000 {
+            n = rng.gen_range(0, DATA_SETS);
+
+            match n == 0 {
+                true => nn_0.process_inc_mul(&inputs[0], &mut weights[0]),
+                false => nn_0.process_dec_mul(&inputs[n], &mut weights[0]),
             }
         }
+        for _ in 0..15000 {
+            n = rng.gen_range(0, DATA_SETS);
+            match n == 1 {
+                true => nn_0.process_inc_mul(&inputs[1], &mut weights[1]),
+                false => nn_0.process_dec_mul(&inputs[n], &mut weights[1]),
+            }
+        }
+        for _ in 0..15000 {
+            n = rng.gen_range(0, DATA_SETS);
+            match n == 2 {
+                true => nn_0.process_inc_mul(&inputs[2], &mut weights[2]),
+                false => nn_0.process_dec_mul(&inputs[n], &mut weights[2])
+            }
+        }
+        for _ in 0..15000 {
+            n = rng.gen_range(0, DATA_SETS);
+            match n == 3 {
+                true => nn_0.process_inc_mul(&inputs[3], &mut weights[3]),
+                false => nn_0.process_dec_mul(&inputs[n], &mut weights[3])
+            }
+        }
+
+        weights[0].to_file("res/persistence/weight_0.txt");
+        weights[1].to_file("res/persistence/weight_1.txt");
+        weights[2].to_file("res/persistence/weight_2.txt");
+        weights[3].to_file("res/persistence/weight_3.txt");
+    } else {
+        weights.push(Weight::from_file("res/persistence/weight_0.txt"));
+        weights.push(Weight::from_file("res/persistence/weight_1.txt"));
+        weights.push(Weight::from_file("res/persistence/weight_2.txt"));
+        weights.push(Weight::from_file("res/persistence/weight_3.txt"));
     }
 
-    w_0.print_colored();
-    for i in 0..10 {
-        let mut b = nn.process(inputs_0.get(i).unwrap(), &w_0);
-        println!("{} - {}", inputs_0.get(i).unwrap().name, b);
-        let mut b = nn.process(inputs_1.get(i).unwrap(), &w_0);
-        println!("{} - {}", inputs_1.get(i).unwrap().name, b);
-        let mut b = nn.process(inputs_2.get(i).unwrap(), &w_0);
-        println!("{} - {}", inputs_2.get(i).unwrap().name, b);
+    weights[0].print_colored();
+    println!("{:=<1$}", "", Y_IMG_SIZE * 4);
+    weights[1].print_colored();
+    println!("{:=<1$}", "", Y_IMG_SIZE * 4);
+    weights[2].print_colored();
+    println!("{:=<1$}", "", Y_IMG_SIZE * 4);
+    weights[3].print_colored();
+    println!("{:=<1$}", "", Y_IMG_SIZE * 4);
+
+    let test_inputs = Input::inputs_from_path("res/test/*.png", &One);
+    let mut is_of_class = false;
+    for t in test_inputs.iter() {
+        is_of_class = nn_0.process(t, &weights[0]);
+        println!("{} is {} - {}", t.name.green(), Zero, is_of_class);
+        is_of_class = nn_0.process(t, &weights[1]);
+        println!("{} is {} - {}", t.name.green(), One, is_of_class);
+        is_of_class = nn_0.process(t, &weights[2]);
+        println!("{} is {} - {}", t.name.green(), Two, is_of_class);
+        is_of_class = nn_0.process(t, &weights[3]);
+        println!("{} is {} - {}", t.name.green(), Three, is_of_class);
+        println!("{:=<1$}", "", Y_IMG_SIZE * 4);
     }
 }
