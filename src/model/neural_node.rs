@@ -1,10 +1,6 @@
-use std::thread::{sleep, spawn};
-use std::time::Duration;
+use model::{input::Input, weight::Weight};
 
-use rand::{Rng, thread_rng};
 use super::rayon::prelude::*;
-
-use model::{*, image_class::ImageClass::*, input::Input, weight::Weight};
 
 pub struct NeuralNode {
     pub name: String,

@@ -1,99 +1,83 @@
 extern crate colored;
+extern crate glob;
 extern crate rand;
+
+use std::env;
 
 use colored::Colorize;
 use rand::Rng;
 
-use model::*;
-use model::image_class::ImageClass::*;
-use model::input::Input;
-use model::neural_node::NeuralNode;
-use model::weight::Weight;
+use model::{*, image_class::ImageClass::*, input::Input, neural_node::NeuralNode, weight::Weight};
 
 mod model;
 
 const DATA_SETS: usize = 4;
+const LEARNING_ITERATIONS: usize = 15000;
+
+macro_rules! print_separator {
+    () => (println!("{:=<1$}", "", Y_IMG_SIZE * 4));
+}
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let is_training_mode = match args.len() {
+        2 => {
+            args[1].to_ascii_lowercase().eq(&String::from("true"))
+        },
+        _ => {
+            false
+        }
+    };
     let mut rng = rand::thread_rng();
 
-    let mut inputs: Vec<Vec<Input>> = Vec::new();
-    inputs.push(Input::inputs_from_path("res/0/*.png", &Zero));
-    inputs.push(Input::inputs_from_path("res/1/*.png", &One));
-    inputs.push(Input::inputs_from_path("res/2/*.png", &Two));
-    inputs.push(Input::inputs_from_path("res/3/*.png", &Three));
-
-    let mut weights: Vec<Weight> = Vec::new();
     let mut nn_0 = NeuralNode::new("nn_0", 6000);
-
-    if !true {
-        weights.push(Weight::new("w_0"));
-        weights.push(Weight::new("w_1"));
-        weights.push(Weight::new("w_2"));
-        weights.push(Weight::new("w_3"));
-
-        let mut n: usize = 0;
-        for _ in 0..15000 {
-            n = rng.gen_range(0, DATA_SETS);
-
-            match n == 0 {
-                true => nn_0.process_inc_mul(&inputs[0], &mut weights[0]),
-                false => nn_0.process_dec_mul(&inputs[n], &mut weights[0]),
-            }
+    let mut weights: Vec<Weight> = Vec::new();
+    if is_training_mode {
+        // Read inputs from res/(0..9) folders
+        let mut inputs: Vec<Vec<Input>> = Vec::new();
+        for i in 0..DATA_SETS {
+            let mut ds_folder_name = String::from("res/");
+            ds_folder_name.push_str(&i.to_string());
+            ds_folder_name.push_str("/*.png");
+            inputs.push(Input::inputs_from_path(&ds_folder_name, &Zero));
         }
-        for _ in 0..15000 {
-            n = rng.gen_range(0, DATA_SETS);
-            match n == 1 {
-                true => nn_0.process_inc_mul(&inputs[1], &mut weights[1]),
-                false => nn_0.process_dec_mul(&inputs[n], &mut weights[1]),
+        // Update weights
+        for i in 0..DATA_SETS {
+            let mut weight_name = String::from("w_");
+            weight_name.push_str(&i.to_string());
+            weights.push(Weight::new(&weight_name));
+            for _ in 0..LEARNING_ITERATIONS {
+                let mut n = rng.gen_range(0, DATA_SETS);
+                match n == i {
+                    true => nn_0.process_inc_mul(&inputs[i], &mut weights[i]),
+                    false => nn_0.process_dec_mul(&inputs[n], &mut weights[i]),
+                }
             }
+            // Save weights to .txt files
+            let mut file_name = String::from("res/persistence/weight_");
+            file_name.push_str(&i.to_string());
+            file_name.push_str(".txt");
+            weights[i].to_file(&file_name).unwrap_or_default();
         }
-        for _ in 0..15000 {
-            n = rng.gen_range(0, DATA_SETS);
-            match n == 2 {
-                true => nn_0.process_inc_mul(&inputs[2], &mut weights[2]),
-                false => nn_0.process_dec_mul(&inputs[n], &mut weights[2])
-            }
-        }
-        for _ in 0..15000 {
-            n = rng.gen_range(0, DATA_SETS);
-            match n == 3 {
-                true => nn_0.process_inc_mul(&inputs[3], &mut weights[3]),
-                false => nn_0.process_dec_mul(&inputs[n], &mut weights[3])
-            }
-        }
-
-        weights[0].to_file("res/persistence/weight_0.txt");
-        weights[1].to_file("res/persistence/weight_1.txt");
-        weights[2].to_file("res/persistence/weight_2.txt");
-        weights[3].to_file("res/persistence/weight_3.txt");
     } else {
-        weights.push(Weight::from_file("res/persistence/weight_0.txt"));
-        weights.push(Weight::from_file("res/persistence/weight_1.txt"));
-        weights.push(Weight::from_file("res/persistence/weight_2.txt"));
-        weights.push(Weight::from_file("res/persistence/weight_3.txt"));
+        // Read saved weights
+        for f in get_paths("res/persistence/*.txt").iter() {
+            weights.push(Weight::from_file(f));
+        }
     }
 
-    weights[0].print_colored();
-    println!("{:=<1$}", "", Y_IMG_SIZE * 4);
-    weights[1].print_colored();
-    println!("{:=<1$}", "", Y_IMG_SIZE * 4);
-    weights[2].print_colored();
-    println!("{:=<1$}", "", Y_IMG_SIZE * 4);
-    weights[3].print_colored();
-    println!("{:=<1$}", "", Y_IMG_SIZE * 4);
+    for w in weights.iter() {
+        w.print_colored();
+        print_separator!();
+    }
 
-    let test_inputs = Input::inputs_from_path("res/test/*.png", &One);
-    let mut is_of_class = false;
+    let test_inputs = Input::inputs_from_path("res/test/*.png", &Zero);
+    let mut is_of_class: bool;
     for t in test_inputs.iter() {
-        is_of_class = nn_0.process(t, &weights[0]);
-        println!("{} is {} - {}", t.name.green(), Zero, is_of_class);
-        is_of_class = nn_0.process(t, &weights[1]);
-        println!("{} is {} - {}", t.name.green(), One, is_of_class);
-        is_of_class = nn_0.process(t, &weights[2]);
-        println!("{} is {} - {}", t.name.green(), Two, is_of_class);
-        is_of_class = nn_0.process(t, &weights[3]);
-        println!("{} is {} - {}", t.name.green(), Three, is_of_class);
-        println!("{:=<1$}", "", Y_IMG_SIZE * 4);
+        for (i, w) in weights.iter().enumerate() {
+            is_of_class = nn_0.process(t, w);
+            println!("{} is {} - {}", t.name.green(), i, is_of_class);
+        }
+        print_separator!();
     }
 }

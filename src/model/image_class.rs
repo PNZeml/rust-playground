@@ -6,7 +6,7 @@ pub enum ImageClass {
     Zero,
     One,
     Two,
-    Three
+    Three,
 }
 
 impl ImageClass {

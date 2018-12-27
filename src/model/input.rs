@@ -1,14 +1,13 @@
 use std::fmt;
-use super::image::{GenericImageView, Pixel, Rgb};
-use super::colored::*;
-use std::fs::create_dir_all;
-use std::path::{Path, PathBuf};
-use super::glob::{glob_with, MatchOptions};
-use super::rayon::prelude::*;
-use model::{*, image_class::{ImageClass, ImageClass::*}};
-use super::rayon::iter::IntoParallelRefIterator;
+use std::path::Path;
 
-#[derive(Clone)]
+use model::{*, image_class::{ImageClass, ImageClass::*}};
+
+use super::colored::*;
+use super::image::{GenericImageView, Pixel};
+use super::rayon::iter::IntoParallelRefIterator;
+use super::rayon::prelude::*;
+
 pub struct Input {
     pub name: String,
     pub signals: Vec<i128>,
@@ -31,7 +30,7 @@ impl Input {
     }
 
     pub fn inputs_from_path(path: &str, class: &ImageClass) -> Vec<Input> {
-        get_learning_files(path).par_iter()
+        get_paths(path).par_iter()
             .map(|x| Input::input_from_path(x, class))
             .filter(|x| x.is_some())
             .map(|x| x.unwrap())
@@ -44,14 +43,14 @@ impl Input {
             Err(_) => {
                 println!("{}",
                          format!("Error :\t Can't open the image {:?}", path).red());
-                return None
+                return None;
             }
         };
         let img_size = image.dimensions().0 * image.dimensions().1;
         if img_size != get_img_size() as u32 {
             println!("{}",
                      format!("Error :\t Wrong the size of the image {:?}", path).red());
-            return None
+            return None;
         }
         let signals: Vec<i128> = image.pixels().map(|(_, _, p)|
             if p.channels()[0] != 0 { 1 } else { -1 }
@@ -59,7 +58,7 @@ impl Input {
         Some(Input {
             name: format!("{:?}", path.file_name().unwrap()),
             signals,
-            class: class.clone()
+            class: class.clone(),
         })
     }
 }
@@ -82,11 +81,4 @@ impl fmt::Display for Input {
                self.class,
                signal_sum)
     }
-}
-
-fn get_learning_files(path: &str) -> Vec<PathBuf> {
-    glob_with(path, &Default::default())
-        .unwrap()
-        .filter_map(|x| x.ok())
-        .collect()
 }
