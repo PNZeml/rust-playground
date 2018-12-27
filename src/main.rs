@@ -11,7 +11,7 @@ use model::{*, image_class::ImageClass::*, input::Input, neural_node::NeuralNode
 
 mod model;
 
-const DATA_SETS: usize = 4;
+const DATA_SETS: usize = 6;
 const LEARNING_ITERATIONS: usize = 15000;
 
 macro_rules! print_separator {
@@ -74,10 +74,12 @@ fn main() {
     let test_inputs = Input::inputs_from_path("res/test/*.png", &Zero);
     let mut is_of_class: bool;
     for t in test_inputs.iter() {
-        for (i, w) in weights.iter().enumerate() {
-            is_of_class = nn_0.process(t, w);
-            println!("{} is {} - {}", t.name.green(), i, is_of_class);
-        }
+        let classes: Vec<i8> = weights.iter()
+            .enumerate()
+            .filter(|(i, w)| nn_0.process(t, w))
+            .map(|x| x.0 as i8)
+            .collect();
+        println!("Image {} is of {:?} classes", t.name.green(), classes);
         print_separator!();
     }
 }
