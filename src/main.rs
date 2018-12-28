@@ -126,7 +126,7 @@ fn main() {
             .filter(|x| nn.process(t, x.1))
             .map(|x| x.0 as i8)
             .collect();
-        println!("Image {} is of {:?} classes", t.name.green(), classes);
+        println!("{} :\t belongs to {:?} classes", t.name.green(), classes);
         print_separator!();
     }
 }
