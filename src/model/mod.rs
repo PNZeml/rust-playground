@@ -19,8 +19,8 @@ pub fn get_img_size() -> usize {
     X_IMG_SIZE * Y_IMG_SIZE
 }
 
-pub fn get_paths(path: &str) -> Vec<PathBuf> {
-    glob_with(path, &Default::default())
+pub fn get_paths(pattern: &str) -> Vec<PathBuf> {
+    glob_with(pattern, &Default::default())
         .unwrap()
         .filter_map(|x| x.ok())
         .collect()

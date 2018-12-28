@@ -29,7 +29,7 @@ impl Input {
         }
     }
 
-    pub fn inputs_from_path(path: &str, class: &ImageClass) -> Vec<Input> {
+    pub fn inputs_from_pattern(path: &str, class: &ImageClass) -> Vec<Input> {
         get_paths(path).par_iter()
             .map(|x| Input::input_from_path(x, class))
             .filter(|x| x.is_some())
