@@ -11,7 +11,7 @@ use super::colored::Colorize;
 pub struct Weight {
     pub name: String,
     pub coefficients: Vec<i128>,
-    pub adjusting_iteration: i128,
+    pub adjusting_iteration: u64,
 }
 
 impl Weight {
@@ -26,7 +26,7 @@ impl Weight {
     pub fn to_file(&self, path: &str) -> Result<bool, &str> {
         let mut file = match File::create(path) {
             Ok(x) => x,
-            Err(_) => return Err("Error :\t while a file was creating"),
+            Err(_) => return Err("Error :\t An error occurred while a file was creating"),
         };
         self.coefficients.iter().for_each(|c| {
             let mut buf_str = String::from(c.to_string());
@@ -38,7 +38,7 @@ impl Weight {
         });
         match file.flush() {
             Ok(_) => Ok(true),
-            Err(_) => Err("Error :\t on a file flush"),
+            Err(_) => Err("Error :\t An error occurred on a file flush"),
         }
     }
 

@@ -24,7 +24,8 @@ impl Input {
             })
         } else {
             println!("{}",
-                     format!("Error :\t The number of Signals doesn't equal to the size of image").red());
+                     format!("Error :\t The number of Signals \
+                     doesn't equal to the size of image").red());
             None
         }
     }
@@ -49,11 +50,14 @@ impl Input {
         let img_size = image.dimensions().0 * image.dimensions().1;
         if img_size != get_img_size() as u32 {
             println!("{}",
-                     format!("Error :\t Wrong the size of the image {:?}", path).red());
+                     format!("Error :\t The wrong size of the image {:?}", path).red());
             return None;
         }
         let signals: Vec<i128> = image.pixels().map(|(_, _, p)|
-            if p.channels()[0] != 0 { 1 } else { -1 }
+            match p.channels()[0] == 0 {
+                true => 1,
+                false => -1,
+            }
         ).collect();
         Some(Input {
             name: format!("{:?}", path.file_name().unwrap()),
@@ -76,7 +80,7 @@ impl Default for Input {
 impl fmt::Display for Input {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let signal_sum: i128 = self.signals.iter().sum();
-        write!(f, "{}\t\t : sum of signals {} of image {}",
+        write!(f, "{} :\t The sum of signals {} of the image {}",
                self.name.green(),
                self.class,
                signal_sum)
