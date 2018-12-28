@@ -23,25 +23,22 @@ impl Weight {
         }
     }
 
-    pub fn to_file(&self, path: &str) -> Result<&str, &str> {
+    pub fn to_file(&self, path: &str) -> Result<bool, &str> {
         let mut file = match File::create(path) {
             Ok(x) => x,
-            Err(_) => return Err("Error : error on file creating"),
+            Err(_) => return Err("Error :\t while a file was creating"),
         };
-        let mut buf_str = String::new();
         self.coefficients.iter().for_each(|c| {
-            buf_str = String::new();
-            buf_str.push_str(&c.to_string());
+            let mut buf_str = String::from(c.to_string());
             buf_str.push('\n');
-            let bytes = buf_str.as_bytes();
-            match file.write_all(bytes) {
+            match file.write_all(buf_str.as_bytes()) {
                 Ok(x) => x,
                 Err(_) => return (),
             }
         });
         match file.flush() {
-            Ok(_) => Ok("File was successful write"),
-            Err(_) => Err("Error : error on file flush"),
+            Ok(_) => Ok(true),
+            Err(_) => Err("Error :\t on a file flush"),
         }
     }
 
@@ -106,7 +103,7 @@ impl Weight {
 
 impl fmt::Display for Weight {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}\t : весовые коэффициэнты на {} корректировке: {:?}",
+        write!(f, "{} :\t Weight coefficients on {} adjusting: {:?}",
                self.name.green(),
                self.adjusting_iteration,
                self.coefficients)
